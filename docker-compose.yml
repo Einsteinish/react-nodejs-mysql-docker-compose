@@ -7,8 +7,9 @@ x-common-variables: &common-variables
   REACT_APP_SERVER_PORT: 8000
 
 services:
-  mysql:
+  mysql-db:
     image: mysql:5.7
+    container_name: mysql_container
     environment:
       <<: *common-variables
       MYSQL_HOST: localhost
@@ -20,42 +21,41 @@ services:
       - ./db/sample.sql:/docker-entrypoint-initdb.d/sample.sql
   phpmyadmin:
     depends_on:
-      - mysql
+      - mysql-db
     image: phpmyadmin/phpmyadmin
+    container_name: phpadmin_container
     environment:
-      PMA_HOST: mysql
+      PMA_HOST: mysql-db
     links:
-      - mysql:mysql
+      - mysql-db:mysql-db
     ports:
       - 8080:80
     restart: always
   server:
     build: ./server
+    container_name: node_server_container
     depends_on:
-      - mysql
-    expose:
-      - 8000
+      - mysql-db
     environment:
       <<: *common-variables
-      MYSQL_HOST_IP: mysql
+      MYSQL_HOST_IP: mysql-db
     ports:
       - 8000:8000
     volumes:
       - ./server:/app
     links:
-      - mysql
-    command: yarn start
+      - mysql-db
+    command: npm start
   client:
     build: ./client
+    container_name: client_container
     environment:
       <<: *common-variables
       NODE_PATH: src
-    expose:
-      - 3000
     ports:
       - 3000:3000
     volumes:
       - ./client/src:/app/src
     links:
       - server
-    command: yarn start
+    command: npm start
